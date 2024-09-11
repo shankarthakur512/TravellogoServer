@@ -3,50 +3,41 @@ import LocalGuide from "../models/LocalGuide.model.js";
 import { uploadOnCloudinary } from "../utils/cloudnary.js";
 
 export const registerTourPackage = async (req, res) => {
-//   console.log(req.files)
-    try {
-    const {createdBy , tripName , Location,  duration, type, hotel , hotelRating , price, status, itinerary, startingDate } = req.body;
-    
-//   console.log(createdBy)
- 
-    const localGuideinfo = await LocalGuide.findById(createdBy);
-    if (!localGuideinfo) {
-      return res.status(404).json({ message: 'Local guide not found' });
-    }
-    // console.log("Hotel:", hotel);
-    // console.log("Hotel Rating:", hotelRating);
-    // console.log("Starting Date:", startingDate);
-    const parts = startingDate.split('/');
-const formattedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-    
-    console.log(localGuideinfo)
-    const photospath = req.files.photos.map(file => file.path);
-    let photosUrl = [];
+  try {
+    const { createdBy, tripName, Location, duration, type, hotel, hotelRating, price, status, itinerary, startingDate } = req.body;
 
-for (const file of photospath) {
-    try {
-        const photos = await uploadOnCloudinary(file);  // Wait for the upload to finish
-        console.log(photos.url);  // Log the URL to the console
-        photosUrl.push(photos.url);  // Push the photo URL to the array
-    } catch (error) {
-        console.error("Error uploading photo:", error);
-        // You can handle the error here if needed, e.g., skipping the failed upload
-    }
-}
- console.log(photosUrl)
-    const hoteldetails = {name : hotel , rating : hotelRating}
+    // Format the starting date
+    const parts = startingDate.split('/');
+    const formattedDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+
+    // Upload photos to Cloudinary and get their URLs
+    const photospath = req.files.photos.map(file => file.path);
+    const photosUrl = await Promise.all(
+      photospath.map(async file => {
+        try {
+          const photo = await uploadOnCloudinary(file);
+          return photo.url;
+        } catch (error) {
+          console.error("Error uploading photo:", error);
+          return null; // Handle the error if needed, e.g., skip failed uploads
+        }
+      })
+    ).then(urls => urls.filter(url => url !== null)); // Filter out any failed uploads
+
+    const hoteldetails = { name: hotel, rating: hotelRating };
+
     const newTrip = new Trip({
-      createdBy: localGuideinfo, 
-      duration,
+      createdBy,
       tripName,
-      location : Location,
+      location: Location.toLowerCase(),
+      duration,
       type,
-      hotel : hoteldetails,
+      hotel: hoteldetails,
       price,
-    //   status,
+      status,
       itinerary,
-      startingDate : formattedDate,
-      photos : photosUrl,
+      startingDate: formattedDate,
+      photos: photosUrl,
     });
 
     await newTrip.save();
@@ -64,11 +55,9 @@ for (const file of photospath) {
   }
 };
 
-
 export const getTripsByLocalGuide = async (req, res) => {
   try {
     const { GuideId } = req.params;
-console.log("yha kuch to hai")
     const trips = await Trip.find({ createdBy: GuideId });
 
     const groupedTrips = trips.map(trip => ({
@@ -82,18 +71,6 @@ console.log("yha kuch to hai")
       startingDate: trip.startingDate,
       status: trip.status,
       type: trip.type,
-      // guideDetails: {
-      //   Govt_ID: trip.createdBy.Govt_ID,
-      //   aboutYourself: trip.createdBy.aboutYourself,
-      //   address: trip.createdBy.address,
-      //   city: trip.createdBy.city,
-      //   country: trip.createdBy.country,
-      //   email: trip.createdBy.email,
-      //   mobileNo: trip.createdBy.mobileNo,
-      //   native: trip.createdBy.native,
-      //   picture: trip.createdBy.picture,
-      //   languages: trip.createdBy.languages,
-      // },
     }));
 
     res.status(200).json({
@@ -108,7 +85,56 @@ console.log("yha kuch to hai")
   }
 };
 
+export const getTripByLocation = async (req, res) => {
+  const { location } = req.body;
 
+  try {
+    const trips = await Trip.aggregate([
+      { $match: { location: location.toLowerCase() } }, // Match location
+      {
+        $lookup: {
+          from: 'localguides', // Collection name for LocalGuide
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'guideDetails',
+        },
+      },
+      { $unwind: '$guideDetails' }, // Unwind the array to include guide details
+      {
+        $project: {
+          _id: 1,
+          tripName: 1,
+          location: 1,
+          duration: 1,
+          type: 1,
+          hotel: 1,
+          price: 1,
+          itinerary: 1,
+          photos: 1,
+          startingDate: 1,
+          status: 1,
+          guideDetails: {
+            Govt_ID: '$guideDetails.Govt_ID',
+            aboutYourself: '$guideDetails.aboutYourself',
+            address: '$guideDetails.address',
+            city: '$guideDetails.city',
+            country: '$guideDetails.country',
+            email: '$guideDetails.email',
+            mobileNo: '$guideDetails.mobileNo',
+            native: '$guideDetails.native',
+            picture: '$guideDetails.picture',
+            languages: '$guideDetails.languages',
+          },
+        },
+      },
+    ]);
 
+    if (trips.length === 0) {
+      return res.json({ msg: "No packages found" });
+    }
 
-
+    return res.json({ msg: "success", trips });
+  } catch (error) {
+    return res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};

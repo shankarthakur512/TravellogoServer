@@ -57,7 +57,8 @@ const LocalGuideSchema = new Schema({
   languages: {
     type: [String],  
     required: true
-  }
+  },
+
 });
 
 const LocalGuide = mongoose.model('LocalGuide', LocalGuideSchema);
