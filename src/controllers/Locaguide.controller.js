@@ -56,30 +56,105 @@ export const findGuideByUser = async (req, res) => {
   try {
     const { user } = req.body;
 
-    // Check if user ID is valid
     if (!mongoose.Types.ObjectId.isValid(user)) {
-      return res.status(400).json({
-        message: 'Invalid user ID'
-      });
+      return res.status(400).json({ message: "Invalid user ID" });
     }
 
-    // Find the guide by user ID
-    const guide = await LocalGuide.findOne({ user: new mongoose.Types.ObjectId(user) });
+    const guide = await LocalGuide.aggregate([
+      {
+        $match: { user: new mongoose.Types.ObjectId(user) },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      {
+        $unwind: "$userInfo",
+      },
+      {
+        $project: {
+          _id: 1,
+          address: 1,
+          country: 1,
+          city: 1,
+          aboutYourself: 1,
+          native: 1,
+          mobileNo: 1,
+          email: 1,
+          Govt_ID: 1,
+          picture: 1,
+          languages: 1,
+          userInfo: {
+            _id: 1,
+            username: 1,
+            email: 1,
+            fullname: 1,
+          },
+        },
+      },
+    ]);
 
-    if (!guide) {
-      return res.status(404).json({
-        message: 'Local guide not found'
-      });
+    if (!guide.length) {
+      return res.status(404).json({ message: "Local guide not found" });
     }
 
     res.status(200).json({
-      message: 'Local guide found',
-      guide
+      message: "Local guide found",
+      guide: guide[0],
     });
   } catch (error) {
     res.status(500).json({
-      message: 'Error finding local guide',
-      error: error.message
+      message: "Error finding local guide",
+      error: error.message,
     });
+  }
+};
+
+// Find Local Guide by City with Aggregation
+export const findGuideByCity = async (req, res) => {
+  const { city } = req.body;
+  try {
+    const guides = await LocalGuide.aggregate([
+      { $match: { city: city.toLowerCase() } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      { $unwind: "$userInfo" },
+      {
+        $project: {
+          _id: 1,
+          address: 1,
+          country: 1,
+          city: 1,
+          aboutYourself: 1,
+          native: 1,
+          mobileNo: 1,
+          email: 1,
+          Govt_ID: 1,
+          picture: 1,
+          languages: 1,
+          "userInfo.username": 1,
+          "userInfo.email": 1,
+          "userInfo.fullname": 1,
+        },
+      },
+    ]);
+
+    if (!guides.length) {
+      return res.json({ msg: "No such guides" });
+    }
+
+    res.status(200).json({ msg: "Success", guides });
+  } catch (error) {
+    res.status(500).json({ message: "Error in finding guides", error: error.message });
   }
 };

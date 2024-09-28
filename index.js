@@ -21,19 +21,19 @@ app.use(cookieParser())
 //routes import
 import userRouter from './src/routes/user.routes.js'
 import GuideRouter from './src/routes/LocalGuide.routes.js'
-<<<<<<< HEAD
+
 
 //routes use
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/Guide", GuideRouter)
 
-=======
+
 import TripsRouter from './src/routes/TripPackage.routes.js'
 //routes use
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/Guide", GuideRouter)
 app.use("/api/v1/Trips", TripsRouter)
->>>>>>> d0da66e (Trip model created)
+
 
 //Mail sending api
 app.post('/sendmail' , Sendmail)

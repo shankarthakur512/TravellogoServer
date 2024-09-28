@@ -1,6 +1,6 @@
 import multer from "multer";
 import { Router } from "express";
-import { findGuideByUser, registerGuide } from "../controllers/Locaguide.controller.js";
+import { findGuideByCity, findGuideByUser, registerGuide } from "../controllers/Locaguide.controller.js";
 
 // Configure multer storage
 // const storage = multer.diskStorage({
@@ -25,4 +25,5 @@ router.route('/register-guide').post( uploadImage.single("Photo"),
   registerGuide // Handle the registration logic
 );
 router.route('/find-guide').post(findGuideByUser)
+router.route('/find-guideByCity').post(findGuideByCity)
 export default router;
