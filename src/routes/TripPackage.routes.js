@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {registerTourPackage,  getTripsByLocalGuide ,getTripByLocation} from "../controllers/TripPackage.controller.js";
+import {registerTourPackage,  getTripsByLocalGuide ,getTripByLocation, getTripDetailById} from "../controllers/TripPackage.controller.js";
 import upload from "../middleware/multer.js";
 
 
@@ -16,6 +16,7 @@ router.route("/register-trip").post(
 
 router.get('/trips/:GuideId', getTripsByLocalGuide);
 
-router.post('/find-trips' , getTripByLocation)
+router.post('/find-trips' , getTripByLocation);
+router.get('/find-trip/:tripId' , getTripDetailById)
 
 export default router;

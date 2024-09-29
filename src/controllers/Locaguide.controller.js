@@ -119,7 +119,11 @@ export const findGuideByCity = async (req, res) => {
   const { city } = req.body;
   try {
     const guides = await LocalGuide.aggregate([
-      { $match: { city: city.toLowerCase() } },
+      { 
+        $match: { 
+          city: { $regex: new RegExp(city, 'i') } 
+        } 
+      },
       {
         $lookup: {
           from: "users",
@@ -156,5 +160,56 @@ export const findGuideByCity = async (req, res) => {
     res.status(200).json({ msg: "Success", guides });
   } catch (error) {
     res.status(500).json({ message: "Error in finding guides", error: error.message });
+  }
+};
+
+
+export const findGuideById = async (req, res) => {
+  const { guideId } = req.params; // Extract guideId from the request parameters
+
+  try {
+    const guide = await LocalGuide.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(guideId) } },
+ // Match the guide by ID
+      {
+        $lookup: {
+          from: 'users', 
+          localField: 'user', 
+          foreignField: '_id',
+          as: 'userDetails', // The resulting array field name in the output
+        },
+      },
+      { $unwind: '$userDetails' }, 
+      {
+        $project: {
+          _id: 1, // Guide ID
+          Govt_ID: 1,
+          aboutYourself: 1,
+          address: 1,
+          city: 1,
+          country: 1,
+          email: 1,
+          mobileNo: 1,
+          native: 1,
+          picture: 1,
+          languages: 1,
+          userDetails: {
+            fullname: 1,
+            email: 1,
+            avatar: 1,
+           },
+        },
+      }
+    ]);
+     
+    if (!guide || guide.length === 0) {
+      return res.status(404).json({ msg: 'Guide not found' });
+    }
+
+
+
+    return res.json({ msg: 'Success', guide: guide[0]}); // Return the first (and only) guide from the aggregation
+  } catch (error) {
+    return res.status(500).json({ msg: 'Server error', error: error.message });
   }
 };

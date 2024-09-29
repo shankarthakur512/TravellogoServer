@@ -1,6 +1,7 @@
 import Trip from "../models/TripPackage.model.js";
 import LocalGuide from "../models/LocalGuide.model.js";
 import { uploadOnCloudinary } from "../utils/cloudnary.js";
+import mongoose from "mongoose";
 
 export const registerTourPackage = async (req, res) => {
   try {
@@ -99,7 +100,16 @@ export const getTripByLocation = async (req, res) => {
           as: 'guideDetails',
         },
       },
-      { $unwind: '$guideDetails' }, // Unwind the array to include guide details
+      { $unwind: '$guideDetails' }, // Unwind to include guide details
+      {
+        $lookup: {
+          from: 'users', // Assuming 'users' is the collection for User data
+          localField: 'guideDetails.user', // Field linking LocalGuide to User (assume userId exists in LocalGuide)
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      { $unwind: '$userDetails' }, // Unwind to include user details
       {
         $project: {
           _id: 1,
@@ -124,6 +134,82 @@ export const getTripByLocation = async (req, res) => {
             native: '$guideDetails.native',
             picture: '$guideDetails.picture',
             languages: '$guideDetails.languages',
+          },
+          userDetails: {
+            _id: 1,
+            fullName: '$userDetails.fullname',
+            email: '$userDetails.email',
+            profilePicture: '$userDetails.avatar',
+          },
+        },
+      },
+    ]);
+
+    if (trips.length === 0) {
+      return res.json({ msg: "No packages found" });
+    }
+
+    return res.json({ msg: "success", trips });
+  } catch (error) {
+    return res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
+
+
+export const getTripDetailById = async (req, res) => {
+  const  { tripId }  = req.params;
+
+  try {
+    const trips = await Trip.aggregate([
+     {$match : {_id : new mongoose.Types.ObjectId(tripId)}}, // Match location
+      {
+        $lookup: {
+          from: 'localguides', 
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'guideDetails',
+        },
+      },
+      { $unwind: '$guideDetails' }, 
+      {
+        $lookup: {
+          from: 'users',  
+          localField: 'guideDetails.user', // Field linking LocalGuide to User (assume userId exists in LocalGuide)
+          foreignField: '_id',
+          as: 'userDetails',
+        },
+      },
+      { $unwind: '$userDetails' }, // Unwind to include user details
+      {
+        $project: {
+          _id: 1,
+          tripName: 1,
+          location: 1,
+          duration: 1,
+          type: 1,
+          hotel: 1,
+          price: 1,
+          itinerary: 1,
+          photos: 1,
+          startingDate: 1,
+          status: 1,
+          guideDetails: {
+            Govt_ID: '$guideDetails.Govt_ID',
+            aboutYourself: '$guideDetails.aboutYourself',
+            address: '$guideDetails.address',
+            city: '$guideDetails.city',
+            country: '$guideDetails.country',
+            email: '$guideDetails.email',
+            mobileNo: '$guideDetails.mobileNo',
+            native: '$guideDetails.native',
+            picture: '$guideDetails.picture',
+            languages: '$guideDetails.languages',
+          },
+          userDetails: {
+            _id: 1,
+            fullName: '$userDetails.fullname',
+            email: '$userDetails.email',
+            profilePicture: '$userDetails.avatar',
           },
         },
       },
