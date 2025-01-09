@@ -22,8 +22,11 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const registerUser = async (req , res ,next) =>{
     try {
+      
         const {fullname , email , username , password } = req.body
- 
+        const avatarpath = req.file ? req.file.path : null;  // Handle if no file is uploaded
+        console.log("Avatar path:", avatarpath);
+
         if(
           [fullname,username , email , password].some((feild)=>feild?.trim()==="")
         ){
@@ -39,7 +42,9 @@ const registerUser = async (req , res ,next) =>{
        res.status(404).send("User with username and email already exist")
       }
     
-      const url = 'profile.avif'
+      const avatar = await uploadOnCloudinary(avatarpath)
+      console.log (avatar)
+      // const url = 'profile.avif'
      
     
       
@@ -47,7 +52,7 @@ const registerUser = async (req , res ,next) =>{
         username ,
         fullname,
         email,
-        avatar : url,
+        avatar : avatar.url ,
        password,
       
       })

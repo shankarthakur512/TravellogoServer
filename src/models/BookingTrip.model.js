@@ -5,17 +5,17 @@ import { Schema } from "mongoose";
 const bookingSchema = new Schema({
   trip: {
     type: Schema.Types.ObjectId,
-    ref: 'Trip', // Reference to the Trip model
+    ref: 'Trip', 
     required: true
   },
   guest: {
     type: Schema.Types.ObjectId,
-    ref: 'User', // Reference to the User model (for guest)
+    ref: 'User', 
     required: true
   },
   host: {
     type: Schema.Types.ObjectId,
-    ref: 'LocalGuide', // Reference to the LocalGuide model (for host)
+    ref: 'LocalGuide', 
     required: true
   },
   bookingDate: {
@@ -40,10 +40,10 @@ const bookingSchema = new Schema({
     trim: true
   }
 }, {
-  timestamps: true // Automatically add createdAt and updatedAt timestamps
+  timestamps: true 
 });
 
-// Create the Booking model
+
 const Booking = mongoose.model('Booking', bookingSchema);
 
 export default Booking;
