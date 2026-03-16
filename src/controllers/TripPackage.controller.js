@@ -55,6 +55,11 @@ export const registerTourPackage = async (req, res) => {
     });
   }
 };
+/**
+ * 
+ * @param {*} req 
+ * @param {*} res 
+ */
 
 export const getTripsByLocalGuide = async (req, res) => {
   try {
