@@ -1,22 +1,26 @@
 import { Router } from "express";
-import {registerTourPackage,  getTripsByLocalGuide ,getTripByLocation, getTripDetailById} from "../controllers/TripPackage.controller.js";
-import upload from "../middleware/multer.js";
-
+import {
+  bookTripAfterPayment,
+  getBookedTripsByUser,
+  getFeaturedTrips,
+  getTripByLocation,
+  getTripDetailById,
+  getTripsByLocalGuide,
+  registerTourPackage,
+} from "../controllers/TripPackage.controller.js";
+import uploadTripPhotos from "../middleware/multer.js";
 
 const router = Router();
 
+router
+  .route("/register-trip")
+  .post(uploadTripPhotos.fields([{ name: "photos", maxCount: 10 }]), registerTourPackage);
 
-
-router.route("/register-trip").post(
- upload.fields([{
-        name : "photos",
-        maxCount : 10
-    } ])
-,registerTourPackage)
-
-router.get('/trips/:GuideId', getTripsByLocalGuide);
-
-router.post('/find-trips' , getTripByLocation);
-router.get('/find-trip/:tripId' , getTripDetailById)
+router.get("/trips/:GuideId", getTripsByLocalGuide);
+router.get("/featured-trips", getFeaturedTrips);
+router.get("/booked-trips/:userId", getBookedTripsByUser);
+router.post("/book-trip", bookTripAfterPayment);
+router.post("/find-trips", getTripByLocation);
+router.get("/find-trip/:tripId", getTripDetailById);
 
 export default router;

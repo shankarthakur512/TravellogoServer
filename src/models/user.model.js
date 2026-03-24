@@ -1,87 +1,94 @@
-import mongoose , {Schema} from "mongoose";
-import jwt from "jsonwebtoken"
-import bcrypt from "bcrypt"
-// we practised datamodel on starblitz.com 
-// we make architecture on moon modeller or explore.ai
+import mongoose, { Schema } from "mongoose";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
-const userSchema = new Schema({
-  username : {
-    type : String,
-    required : true,
-    unique : true,
-    lowercase : true,
-    trim : true,
-    lowecase : true,
-    index : true
+const userSchema = new Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    fullname: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
+    // Password is hidden by default so public API responses do not leak auth data.
+    password: {
+      type: String,
+      required: true,
+      select: false,
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
+    role: {
+      type: String,
+      enum: ["traveler", "guide", "admin"],
+      default: "traveler",
+    },
+    refreshToken: {
+      type: String,
+      select: false,
+      default: "",
+    },
   },
-  email : {
-      type : String,
-      required : true,
-      lowercase : true,
-      trim : true,
-      lowecase : true,
-  },
-  fullname : {
-    type : String,
-    required : true,
-    index : true,
-    trim : true
-  },
-  password : {
-    type : String , // we have to encrypt this
-    required : true,
-  },
+  { timestamps: true }
+);
 
-avatar : {
-    type: String , // we use third party location to store our image cloudnary url
-  
-},
-
-
-refreshToken : {
-      type : String,
- }
-},{timestamps : true})
 userSchema.pre("save", async function (next) {
-  if(!this.isModified("password")) return next();
+  if (!this.isModified("password")) {
+    return next();
+  }
 
-  this.password = await bcrypt.hash(this.password, 10)
-  next()
-})
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
-userSchema.methods.isPasswordCorrect = async function(password){
-    // console.log('shi hsi')
-  const reply =  await bcrypt.compare(password, this.password)
-//  console.log(reply);
-  return reply
-}
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return bcrypt.compare(password, this.password);
+};
 
-userSchema.methods.generateAccessToken = function(){
-  // console.log('aa rha hai bhai access me')
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
-      {
-          _id: this._id,
-          email: this.email,
-          username: this.username,
-          fullName: this.fullName
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      {
-          expiresIn: process.env.ACCESS_TOKEN_EXPIRY
-      }
-  )
-}
-userSchema.methods.generateRefreshToken = function(){
-  // console.log('aa rha hai bhai')
+    {
+      _id: this._id,
+      email: this.email,
+      username: this.username,
+      fullname: this.fullname,
+      role: this.role,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
+    }
+  );
+};
+
+userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
-      {
-          _id: this._id,
-          
-      },
-      process.env.REFRESH_TOKEN_SECRET,
-      {
-          expiresIn: process.env.REFRESH_TOKEN_EXPIRY
-      }
-  )
-}
-export const User = mongoose.model("User" , userSchema)
+    {
+      _id: this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+    }
+  );
+};
+
+export const User = mongoose.model("User", userSchema);
